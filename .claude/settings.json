@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Bash(ruff *)",
+      "Bash(pytest *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "command": "bash -c 'INPUT=$(cat); if printf \"%s\" \"$INPUT\" | grep -q \"git push\"; then cd \"$(git rev-parse --show-toplevel)\" && bash scripts/pre-push-checks.sh; else exit 0; fi'",
+        "timeout": 120000
+      }
+    ]
+  }
+}

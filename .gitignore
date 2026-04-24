@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Testing
+.tox/
+.nox/
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment variables / Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project-specific
+image.png
+
+# Snowflake
+snowflake_credentials.json
+connections.toml
+config.toml
+.snowflake/
+
+# Ruff
+.ruff_cache/
+
+# Claude Code local
+.claude/settings.local.json

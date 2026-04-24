@@ -1,0 +1,15 @@
+# Snowflake CLI プロジェクト定義（SiSデプロイ用）
+# デプロイ: snow streamlit deploy --replace
+# Warehouse名はCI/CDのconnections.tomlで環境別に指定される
+definition_version: 2
+
+entities:
+  ramen_logistics_app:
+    type: streamlit
+    identifier:
+      name: RAMEN_LOGISTICS_APP
+      schema: APP
+    title: "食材物流管理システム"
+    main_file: src/app.py
+    pages_dir: src/pages/
+    stage: APP.STREAMLIT_STAGE

@@ -1,0 +1,8 @@
+#!/bin/bash
+# Git pre-push hook
+# Runs linter, formatter, and tests before allowing push
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+exec "$PROJECT_ROOT/scripts/pre-push-checks.sh"
