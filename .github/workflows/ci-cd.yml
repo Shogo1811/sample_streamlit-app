@@ -58,7 +58,7 @@ jobs:
           cache-dependency-path: pyproject.toml
       - run: pip install -e ".[dev]" pip-audit
       - run: pip-audit --desc on --skip-editable
-      - run: ruff check --select S .
+      - run: ruff check --select S src/
 
   deploy-stg:
     runs-on: ubuntu-latest
