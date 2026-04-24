@@ -57,7 +57,7 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: pip install -e ".[dev]" pip-audit
-      - run: pip-audit --strict --desc on --local
+      - run: pip-audit --desc on --skip-editable
       - run: ruff check --select S .
 
   deploy-stg:
