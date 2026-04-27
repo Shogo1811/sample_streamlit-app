@@ -84,6 +84,7 @@ jobs:
           chmod 600 /tmp/snowflake_key.pem
           printf '[default]\naccount = "%s"\nuser = "%s"\nauthenticator = "SNOWFLAKE_JWT"\nprivate_key_file = "/tmp/snowflake_key.pem"\ndatabase = "RAMEN_LOGISTICS_STG_DB"\nschema = "APP"\nwarehouse = "RAMEN_APP_STG_WH"\n' \
             "$SNOWFLAKE_ACCOUNT" "$SNOWFLAKE_USER" > ~/.snowflake/connections.toml
+          chmod 600 ~/.snowflake/connections.toml
       - name: Apply SQL migrations (if changed)
         run: |
           if git diff --name-only HEAD~1 HEAD | grep -q '^sql/'; then
@@ -123,6 +124,7 @@ jobs:
           chmod 600 /tmp/snowflake_key.pem
           printf '[default]\naccount = "%s"\nuser = "%s"\nauthenticator = "SNOWFLAKE_JWT"\nprivate_key_file = "/tmp/snowflake_key.pem"\ndatabase = "RAMEN_LOGISTICS_PROD_DB"\nschema = "APP"\nwarehouse = "RAMEN_APP_PROD_WH"\n' \
             "$SNOWFLAKE_ACCOUNT" "$SNOWFLAKE_USER" > ~/.snowflake/connections.toml
+          chmod 600 ~/.snowflake/connections.toml
       - name: Apply SQL migrations (if changed)
         run: |
           if git diff --name-only HEAD~1 HEAD | grep -q '^sql/'; then
