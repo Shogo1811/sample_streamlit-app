@@ -1,4 +1,3 @@
-# Snowflake CLI プロジェクト定義（SiSデプロイ用）
 definition_version: 2
 
 entities:
@@ -8,12 +7,7 @@ entities:
       name: RAMEN_LOGISTICS_APP
       schema: APP
     title: "食材物流管理システム"
-    main_file: src/app.py
-    pages_dir: src/pages/
+    main_file: streamlit_app.py
     query_warehouse: RAMEN_APP_PROD_WH
-    stage: APP.STREAMLIT_STAGE
     artifacts:
-      - src/dal/
-      - src/components/
-      - src/utils/
-      - src/__init__.py
+      - src/
