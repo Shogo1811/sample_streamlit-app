@@ -1,6 +1,4 @@
 # Snowflake CLI プロジェクト定義（SiSデプロイ用）
-# デプロイ: snow streamlit deploy --replace
-# Warehouse名はCI/CDのconnections.tomlで環境別に指定される
 definition_version: 2
 
 entities:
@@ -14,3 +12,8 @@ entities:
     pages_dir: src/pages/
     query_warehouse: RAMEN_APP_PROD_WH
     stage: APP.STREAMLIT_STAGE
+    artifacts:
+      - src/dal/
+      - src/components/
+      - src/utils/
+      - src/__init__.py
