@@ -4,7 +4,7 @@ import json
 
 import streamlit as st
 from snowflake.snowpark import Session
-from snowflake.snowpark.functions import col, lit
+from snowflake.snowpark.functions import lit
 
 from src.utils.constants import CACHE_TTL_DASHBOARD
 
@@ -22,21 +22,19 @@ def _parse_sp_result(result) -> dict:
 @st.cache_data(ttl=CACHE_TTL_DASHBOARD)
 def get_proposals(_session: Session, status_filter: str | None = None) -> list[dict]:
     """発注提案リスト取得（RAPにより自店舗のみ）"""
-    df = (
-        _session.table("APP.ORDER_PROPOSALS")
-        .join(_session.table("APP.INGREDIENTS"), on="INGREDIENT_ID")
-        .select(
-            col("PROPOSAL_ID"),
-            col("INGREDIENT_NAME"),
-            col("CATEGORY"),
-            col("RECOMMENDED_QUANTITY"),
-            col("REASON"),
-            col("ORDER_PROPOSALS.STATUS"),
-            col("ORDER_PROPOSALS.CREATED_AT"),
-        )
+    op = _session.table("APP.ORDER_PROPOSALS")
+    ing = _session.table("APP.INGREDIENTS")
+    df = op.join(ing, on="INGREDIENT_ID").select(
+        op["PROPOSAL_ID"],
+        ing["INGREDIENT_NAME"],
+        ing["CATEGORY"],
+        op["RECOMMENDED_QUANTITY"],
+        op["REASON"],
+        op["STATUS"],
+        op["CREATED_AT"],
     )
     if status_filter:
-        df = df.filter(col("ORDER_PROPOSALS.STATUS") == lit(status_filter))
+        df = df.filter(op["STATUS"] == lit(status_filter))
     return [row.as_dict() for row in df.collect()]
 
 
@@ -63,16 +61,18 @@ def reject_proposal(session: Session, proposal_id: int, user_id: str) -> dict:
 @st.cache_data(ttl=CACHE_TTL_DASHBOARD)
 def get_order_plans(_session: Session) -> list[dict]:
     """承認済み発注予定リスト取得"""
+    op = _session.table("APP.ORDER_PLANS")
+    pr = _session.table("APP.ORDER_PROPOSALS")
+    ing = _session.table("APP.INGREDIENTS")
     df = (
-        _session.table("APP.ORDER_PLANS")
-        .join(_session.table("APP.ORDER_PROPOSALS"), on="PROPOSAL_ID")
-        .join(_session.table("APP.INGREDIENTS"), on="INGREDIENT_ID")
+        op.join(pr, on="PROPOSAL_ID")
+        .join(ing, on="INGREDIENT_ID")
         .select(
-            col("PLAN_ID"),
-            col("INGREDIENT_NAME"),
-            col("ORDER_PLANS.QUANTITY"),
-            col("APPROVED_BY"),
-            col("APPROVED_AT"),
+            op["PLAN_ID"],
+            ing["INGREDIENT_NAME"],
+            op["QUANTITY"],
+            op["APPROVED_BY"],
+            op["APPROVED_AT"],
         )
     )
     return [row.as_dict() for row in df.collect()]

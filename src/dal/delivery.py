@@ -8,7 +8,7 @@ import json
 
 import streamlit as st
 from snowflake.snowpark import Session
-from snowflake.snowpark.functions import col, lit
+from snowflake.snowpark.functions import lit
 
 
 def _parse_sp_result(result) -> dict:
@@ -23,36 +23,39 @@ def _parse_sp_result(result) -> dict:
 
 def get_deliveries(session: Session, status_filter: str | None = None) -> list[dict]:
     """配送一覧取得（RAPにより自動フィルタ）"""
+    dl = session.table("APP.DELIVERIES")
+    st_tbl = session.table("APP.STORES")
+    dr = session.table("APP.DRIVERS")
     df = (
-        session.table("APP.DELIVERIES")
-        .join(session.table("APP.STORES"), on="STORE_ID")
-        .join(session.table("APP.DRIVERS"), on="DRIVER_ID")
+        dl.join(st_tbl, on="STORE_ID")
+        .join(dr, on="DRIVER_ID")
         .select(
-            col("DELIVERY_ID"),
-            col("STORE_NAME"),
-            col("DRIVER_NAME"),
-            col("DELIVERIES.STATUS"),
-            col("SCHEDULED_AT"),
-            col("COMPLETED_AT"),
+            dl["DELIVERY_ID"],
+            st_tbl["STORE_NAME"],
+            dr["DRIVER_NAME"],
+            dl["STATUS"],
+            dl["SCHEDULED_AT"],
+            dl["COMPLETED_AT"],
         )
     )
     if status_filter:
-        df = df.filter(col("DELIVERIES.STATUS") == lit(status_filter))
+        df = df.filter(dl["STATUS"] == lit(status_filter))
     return [row.as_dict() for row in df.collect()]
 
 
 def get_driver_deliveries(session: Session) -> list[dict]:
     """ドライバー向け配送リスト取得（RAPにより自分の担当のみ）"""
+    dl = session.table("APP.DELIVERIES")
+    st_tbl = session.table("APP.STORES")
     df = (
-        session.table("APP.DELIVERIES")
-        .join(session.table("APP.STORES"), on="STORE_ID")
+        dl.join(st_tbl, on="STORE_ID")
         .select(
-            col("DELIVERY_ID"),
-            col("STORE_NAME"),
-            col("DELIVERIES.STATUS"),
-            col("SCHEDULED_AT"),
+            dl["DELIVERY_ID"],
+            st_tbl["STORE_NAME"],
+            dl["STATUS"],
+            dl["SCHEDULED_AT"],
         )
-        .sort(col("SCHEDULED_AT"))
+        .sort(dl["SCHEDULED_AT"])
     )
     return [row.as_dict() for row in df.collect()]
 

@@ -2,7 +2,6 @@
 
 import streamlit as st
 from snowflake.snowpark import Session
-from snowflake.snowpark.functions import col
 
 from src.utils.constants import CACHE_TTL_DASHBOARD, CACHE_TTL_MASTER
 
@@ -24,21 +23,16 @@ def get_categories(_session: Session) -> list[str]:
 @st.cache_data(ttl=CACHE_TTL_DASHBOARD)
 def get_inventory(_session: Session) -> list[dict]:
     """在庫データ取得（RAPにより自店舗のみ自動フィルタ）"""
-    df = (
-        _session.table("APP.INVENTORY")
-        .join(
-            _session.table("APP.INGREDIENTS"),
-            on="INGREDIENT_ID",
-        )
-        .select(
-            col("INVENTORY.STORE_ID"),
-            col("INGREDIENT_NAME"),
-            col("CATEGORY"),
-            col("CURRENT_QUANTITY"),
-            col("THRESHOLD"),
-            col("UNIT"),
-            col("INVENTORY.UPDATED_AT"),
-        )
+    inv = _session.table("APP.INVENTORY")
+    ing = _session.table("APP.INGREDIENTS")
+    df = inv.join(ing, on="INGREDIENT_ID").select(
+        inv["STORE_ID"],
+        ing["INGREDIENT_NAME"],
+        ing["CATEGORY"],
+        inv["CURRENT_QUANTITY"],
+        ing["THRESHOLD"],
+        ing["UNIT"],
+        inv["UPDATED_AT"],
     )
     return [row.as_dict() for row in df.collect()]
 
@@ -46,16 +40,17 @@ def get_inventory(_session: Session) -> list[dict]:
 @st.cache_data(ttl=CACHE_TTL_DASHBOARD)
 def get_low_stock_items(_session: Session) -> list[dict]:
     """閾値以下の食材取得（アラート用）"""
+    inv = _session.table("APP.INVENTORY")
+    ing = _session.table("APP.INGREDIENTS")
     df = (
-        _session.table("APP.INVENTORY")
-        .join(_session.table("APP.INGREDIENTS"), on="INGREDIENT_ID")
-        .filter(col("CURRENT_QUANTITY") <= col("THRESHOLD"))
+        inv.join(ing, on="INGREDIENT_ID")
+        .filter(inv["CURRENT_QUANTITY"] <= ing["THRESHOLD"])
         .select(
-            col("INGREDIENT_NAME"),
-            col("CATEGORY"),
-            col("CURRENT_QUANTITY"),
-            col("THRESHOLD"),
-            col("UNIT"),
+            ing["INGREDIENT_NAME"],
+            ing["CATEGORY"],
+            inv["CURRENT_QUANTITY"],
+            ing["THRESHOLD"],
+            ing["UNIT"],
         )
     )
     return [row.as_dict() for row in df.collect()]

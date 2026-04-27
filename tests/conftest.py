@@ -41,6 +41,10 @@ def make_mock_df(rows: list[dict]):
     mock_df.distinct.return_value = mock_df
     mock_df.limit.return_value = mock_df
     mock_df.collect.return_value = mock_rows
+    col_mock = MagicMock()
+    col_mock.__le__ = MagicMock(return_value=MagicMock())
+    col_mock.__eq__ = MagicMock(return_value=MagicMock())
+    mock_df.__getitem__ = MagicMock(return_value=col_mock)
     return mock_df
 
 
