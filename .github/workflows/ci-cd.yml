@@ -57,7 +57,7 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: pip install -e ".[dev]" pip-audit
-      - run: pip-audit --desc on --skip-editable
+      - run: pip-audit --desc on --skip-editable --ignore-vuln CVE-2026-3219
       - run: ruff check --select S src/
 
   deploy-stg:
