@@ -1,7 +1,6 @@
 """配送DALテスト"""
 
 import json
-from unittest.mock import patch
 
 from src.dal.delivery import complete_delivery, get_deliveries, get_driver_deliveries
 from tests.conftest import MockRow, make_mock_df
@@ -63,17 +62,14 @@ class TestGetDriverDeliveries:
 
 
 class TestCompleteDelivery:
-    @patch("src.dal.delivery.st")
-    def test_success(self, mock_st, mock_session):
+    def test_success(self, mock_session):
         sp_result = json.dumps({"success": True, "message": "配送完了"})
         mock_session.sql.return_value.collect.return_value = [MockRow({"result": sp_result})]
 
         result = complete_delivery(mock_session, 1, "SATO")
         assert result == {"success": True, "message": "配送完了"}
-        mock_st.cache_data.clear.assert_called_once()
 
-    @patch("src.dal.delivery.st")
-    def test_empty_result(self, mock_st, mock_session):
+    def test_empty_result(self, mock_session):
         mock_session.sql.return_value.collect.return_value = []
 
         result = complete_delivery(mock_session, 1, "SATO")

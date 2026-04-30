@@ -1,4 +1,8 @@
-"""アプリメインテスト"""
+"""アプリメインテスト（Streamlit版 — React移行により無効化）"""
+
+import pytest
+
+pytestmark = pytest.mark.skip(reason="Streamlit版テスト — React+FastAPIに移行済み")
 
 from unittest.mock import MagicMock, patch
 

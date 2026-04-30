@@ -1,7 +1,6 @@
 """発注DALテスト"""
 
 import json
-from unittest.mock import patch
 
 from tests.conftest import MockRow, make_mock_df
 
@@ -53,8 +52,7 @@ class TestGetProposals:
 
 
 class TestApproveProposal:
-    @patch("src.dal.orders.st")
-    def test_success_json_string(self, mock_st, mock_session):
+    def test_success_json_string(self, mock_session):
         """SP戻り値がJSON文字列の場合にパースされること"""
         from src.dal.orders import approve_proposal
 
@@ -64,8 +62,7 @@ class TestApproveProposal:
         result = approve_proposal(mock_session, 1, 100, "TANAKA")
         assert result == {"success": True, "message": "承認しました"}
 
-    @patch("src.dal.orders.st")
-    def test_empty_result(self, mock_st, mock_session):
+    def test_empty_result(self, mock_session):
         from src.dal.orders import approve_proposal
 
         mock_session.sql.return_value.collect.return_value = []
@@ -75,8 +72,7 @@ class TestApproveProposal:
 
 
 class TestRejectProposal:
-    @patch("src.dal.orders.st")
-    def test_success(self, mock_st, mock_session):
+    def test_success(self, mock_session):
         from src.dal.orders import reject_proposal
 
         sp_result = json.dumps({"success": True, "message": "却下しました"})
@@ -85,8 +81,7 @@ class TestRejectProposal:
         result = reject_proposal(mock_session, 1, "TANAKA")
         assert result == {"success": True, "message": "却下しました"}
 
-    @patch("src.dal.orders.st")
-    def test_empty_result(self, mock_st, mock_session):
+    def test_empty_result(self, mock_session):
         from src.dal.orders import reject_proposal
 
         mock_session.sql.return_value.collect.return_value = []
@@ -107,6 +102,9 @@ class TestGetOrderPlans:
                     "QUANTITY": 100,
                     "APPROVED_BY": "TANAKA",
                     "APPROVED_AT": "2026-04-23",
+                    "STATUS": "未発注",
+                    "EXECUTED_BY": None,
+                    "EXECUTED_AT": None,
                 }
             ]
         )

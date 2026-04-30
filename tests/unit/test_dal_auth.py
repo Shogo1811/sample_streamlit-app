@@ -2,20 +2,13 @@
 
 from src.dal.auth import (
     check_consent,
-    get_current_user,
     get_user_roles,
     is_driver,
     is_manager,
     record_consent,
+    revoke_consent,
 )
-from tests.conftest import MockRow, make_mock_df
-
-
-class TestGetCurrentUser:
-    def test_returns_username(self, mock_session):
-        mock_session.sql.return_value.collect.return_value = [MockRow({"CURRENT_USER()": "TANAKA"})]
-        assert get_current_user(mock_session) == "TANAKA"
-        mock_session.sql.assert_called_once_with("SELECT CURRENT_USER()")
+from tests.conftest import make_mock_df
 
 
 class TestGetUserRoles:
@@ -87,7 +80,17 @@ class TestCheckConsent:
 
 class TestRecordConsent:
     def test_inserts_with_params(self, mock_session):
-        record_consent(mock_session, "TANAKA", "v1.0")
+        record_consent(mock_session, "TANAKA", "1.0.0")
         mock_session.sql.assert_called_once()
         call_args = mock_session.sql.call_args
-        assert call_args.kwargs.get("params") == ["TANAKA", "v1.0"]
+        assert "GRANT" in call_args[0][0]
+        assert call_args.kwargs.get("params") == ["TANAKA", "1.0.0"]
+
+
+class TestRevokeConsent:
+    def test_inserts_revoke(self, mock_session):
+        revoke_consent(mock_session, "TANAKA", "1.0.0")
+        mock_session.sql.assert_called_once()
+        call_args = mock_session.sql.call_args
+        assert "REVOKE" in call_args[0][0]
+        assert call_args.kwargs.get("params") == ["TANAKA", "1.0.0"]
