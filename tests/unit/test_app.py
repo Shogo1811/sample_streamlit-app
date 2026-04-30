@@ -1,10 +1,10 @@
 """アプリメインテスト（Streamlit版 — React移行により無効化）"""
 
+from unittest.mock import MagicMock, patch  # noqa: E402
+
 import pytest
 
 pytestmark = pytest.mark.skip(reason="Streamlit版テスト — React+FastAPIに移行済み")
-
-from unittest.mock import MagicMock, patch
 
 
 class TestGetDriverName:

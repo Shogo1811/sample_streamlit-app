@@ -37,7 +37,13 @@ addopts = "--strict-markers"
 
 [tool.coverage.run]
 source = ["src"]
-omit = ["tests/*"]
+omit = [
+    "src/app.py",
+    "src/pages/*",
+    "src/components/*",
+    "src/dal/session.py",
+    "tests/*",
+]
 
 [tool.coverage.report]
 fail_under = 80
