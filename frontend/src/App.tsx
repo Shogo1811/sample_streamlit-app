@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
 import AuthProvider from "@/auth/AuthProvider";
+
+const isDev = !import.meta.env.VITE_AZURE_AD_TENANT_ID;
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Layout from "@/components/Layout";
 import DashboardPage from "@/pages/DashboardPage";
@@ -130,11 +132,17 @@ export default function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <ErrorBoundary>
-          <AuthProvider>
+          {isDev ? (
             <BrowserRouter>
               <AppRoutes />
             </BrowserRouter>
-          </AuthProvider>
+          ) : (
+            <AuthProvider>
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            </AuthProvider>
+          )}
         </ErrorBoundary>
       </ThemeProvider>
     </QueryClientProvider>

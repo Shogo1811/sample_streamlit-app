@@ -1,6 +1,5 @@
 """Snowparkセッション管理（Container Services / ローカル両対応）"""
 
-import os
 import threading
 
 from snowflake.snowpark import Session
@@ -10,13 +9,15 @@ _session: Session | None = None
 
 
 def _get_connection_params() -> dict:
-    """環境変数から接続パラメータを取得"""
-    account = os.environ.get("SNOWFLAKE_ACCOUNT", "")
-    user = os.environ.get("SNOWFLAKE_USER", "")
-    password = os.environ.get("SNOWFLAKE_PASSWORD", "")
-    private_key_path = os.environ.get("SNOWFLAKE_PRIVATE_KEY_PATH", "")
-    database = os.environ.get("SNOWFLAKE_DATABASE", "")
-    warehouse = os.environ.get("SNOWFLAKE_WAREHOUSE", "")
+    """設定から接続パラメータを取得"""
+    from backend.app.config import settings
+
+    account = settings.snowflake_account
+    user = settings.snowflake_user
+    password = settings.snowflake_password
+    private_key_path = settings.snowflake_private_key_path
+    database = settings.snowflake_database
+    warehouse = settings.snowflake_warehouse
 
     if not account or not user or not database or not warehouse:
         msg = "SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_DATABASE, SNOWFLAKE_WAREHOUSE は必須です"
@@ -29,7 +30,7 @@ def _get_connection_params() -> dict:
         "account": account,
         "user": user,
         "database": database,
-        "schema": os.environ.get("SNOWFLAKE_SCHEMA", "APP"),
+        "schema": settings.snowflake_schema,
         "warehouse": warehouse,
     }
     if private_key_path:

@@ -24,6 +24,7 @@
 | POST | /api/orders/proposals/{id}/approve | 承認 | 必須 | MANAGER |
 | POST | /api/orders/proposals/{id}/reject | 却下 | 必須 | MANAGER |
 | GET | /api/orders/plans | 承認済み発注予定 | 必須 | MANAGER |
+| POST | /api/orders/plans/{id}/execute | 発注実行 | 必須 | MANAGER |
 
 ### 配送
 | Method | Path | 説明 | 認証 | ロール |

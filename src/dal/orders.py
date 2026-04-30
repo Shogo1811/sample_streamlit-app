@@ -51,6 +51,15 @@ def reject_proposal(session: Session, proposal_id: int, user_id: str) -> dict:
     return parse_sp_result(result)
 
 
+def execute_order_plan(session: Session, plan_id: int, user_id: str) -> dict:
+    """発注予定の発注実行（SP経由）"""
+    result = session.sql(
+        "CALL APP.SP_EXECUTE_ORDER_PLAN(?, ?)",
+        params=[plan_id, user_id],
+    ).collect()
+    return parse_sp_result(result)
+
+
 def get_order_plans(session: Session, store_id: int | None = None) -> list[dict]:
     """承認済み発注予定リスト取得"""
     op = session.table("APP.ORDER_PLANS")
@@ -67,6 +76,9 @@ def get_order_plans(session: Session, store_id: int | None = None) -> list[dict]
             op["QUANTITY"],
             op["APPROVED_BY"],
             op["APPROVED_AT"],
+            op["STATUS"].alias("STATUS"),
+            op["EXECUTED_BY"],
+            op["EXECUTED_AT"],
         )
     )
     return [row.as_dict() for row in df.collect()]

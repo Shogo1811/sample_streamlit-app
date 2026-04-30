@@ -12,7 +12,7 @@ from backend.app.schemas import (
 )
 from fastapi import APIRouter, Depends, HTTPException
 from snowflake.snowpark import Session
-from src.dal.orders import approve_proposal, get_order_plans, get_proposals, reject_proposal
+from src.dal.orders import approve_proposal, execute_order_plan, get_order_plans, get_proposals, reject_proposal
 from src.utils.constants import ROLE_MANAGER
 
 router = APIRouter(prefix="/api/orders", tags=["発注"])
@@ -68,3 +68,14 @@ async def list_order_plans(
     """承認済み発注予定一覧取得"""
     store_id = _require_store_id(user)
     return get_order_plans(session, store_id=store_id)
+
+
+@router.post("/plans/{plan_id}/execute", response_model=SPResultResponse)
+async def post_execute_order_plan(
+    plan_id: int,
+    user: CurrentUser = Depends(require_role(ROLE_MANAGER)),
+    session: Session = Depends(get_db_session),
+):
+    """発注予定を発注実行"""
+    result = execute_order_plan(session, plan_id, user.user_id)
+    return SPResultResponse(**result)

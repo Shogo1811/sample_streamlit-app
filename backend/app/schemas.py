@@ -73,6 +73,9 @@ class OrderPlanResponse(BaseModel):
     quantity: int = Field(validation_alias="QUANTITY")
     approved_by: str = Field(validation_alias="APPROVED_BY")
     approved_at: datetime = Field(validation_alias="APPROVED_AT")
+    status: str = Field(validation_alias="STATUS")
+    executed_by: str | None = Field(default=None, validation_alias="EXECUTED_BY")
+    executed_at: datetime | None = Field(default=None, validation_alias="EXECUTED_AT")
 
 
 class DeliveryResponse(BaseModel):

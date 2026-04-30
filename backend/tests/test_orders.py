@@ -69,9 +69,28 @@ class TestOrderEndpoints:
                 "QUANTITY": 100,
                 "APPROVED_BY": "manager-001",
                 "APPROVED_AT": "2026-04-28T10:00:00",
+                "STATUS": "未発注",
+                "EXECUTED_BY": None,
+                "EXECUTED_AT": None,
             }
         ]
         with patch("backend.app.routers.orders_router.get_order_plans", return_value=mock_data):
             resp = client().get("/api/orders/plans")
         assert resp.status_code == 200
         assert len(resp.json()) == 1
+        assert resp.json()[0]["status"] == "未発注"
+
+    def test_execute_order_plan(self, client, mock_session):
+        sp_result = {"success": True, "message": "発注を実行しました"}
+        with patch("backend.app.routers.orders_router.execute_order_plan", return_value=sp_result):
+            resp = client().post("/api/orders/plans/1/execute")
+        assert resp.status_code == 200
+        assert resp.json()["success"] is True
+        assert "発注" in resp.json()["message"]
+
+    def test_execute_order_plan_already_executed(self, client, mock_session):
+        sp_result = {"success": False, "message": "この発注は既に実行済みです"}
+        with patch("backend.app.routers.orders_router.execute_order_plan", return_value=sp_result):
+            resp = client().post("/api/orders/plans/1/execute")
+        assert resp.status_code == 200
+        assert resp.json()["success"] is False

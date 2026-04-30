@@ -96,7 +96,10 @@ CREATE TABLE IF NOT EXISTS APP.ORDER_PLANS (
     store_id INT NOT NULL REFERENCES APP.STORES(store_id),  -- 非正規化（RAP適用用）
     approved_by VARCHAR(100) NOT NULL,
     approved_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    quantity INT NOT NULL CHECK (quantity >= 1 AND quantity <= 10000)
+    quantity INT NOT NULL CHECK (quantity >= 1 AND quantity <= 10000),
+    status VARCHAR(20) DEFAULT '未発注' CHECK (status IN ('未発注', '発注済み')),
+    executed_by VARCHAR(100),
+    executed_at TIMESTAMP_NTZ
 );
 
 CREATE TABLE IF NOT EXISTS APP.DRIVERS (
@@ -531,6 +534,53 @@ BEGIN
     END IF;
 
     RETURN v_total;
+END;
+$$;
+
+-- === SP_EXECUTE_ORDER_PLAN ===
+-- 承認済み発注予定の発注実行（ステータスを「発注済み」に更新 + 監査ログ記録）
+CREATE OR REPLACE PROCEDURE APP.SP_EXECUTE_ORDER_PLAN(
+    p_plan_id INT, p_user_id VARCHAR
+)
+RETURNS VARIANT
+LANGUAGE SQL
+EXECUTE AS OWNER
+AS
+$$
+DECLARE
+    v_status VARCHAR;
+    v_store_id INT;
+BEGIN
+    -- 1. ロール検証（MANAGERのみ）
+    SELECT related_id INTO :v_store_id
+    FROM APP.USER_ROLE_MAPPING
+    WHERE user_id = :p_user_id AND role_type = 'MANAGER';
+    IF (v_store_id IS NULL) THEN
+        RETURN OBJECT_CONSTRUCT('success', FALSE, 'message', '店長権限が必要です');
+    END IF;
+
+    -- 2. 発注予定の存在確認 + ステータスチェック
+    SELECT status INTO :v_status
+    FROM APP.ORDER_PLANS
+    WHERE plan_id = :p_plan_id AND store_id = :v_store_id;
+    IF (v_status IS NULL) THEN
+        RETURN OBJECT_CONSTRUCT('success', FALSE, 'message', '発注予定が見つかりません');
+    END IF;
+    IF (v_status != '未発注') THEN
+        RETURN OBJECT_CONSTRUCT('success', FALSE, 'message', 'この発注は既に実行済みです');
+    END IF;
+
+    -- 3. ステータス更新
+    UPDATE APP.ORDER_PLANS
+    SET status = '発注済み', executed_by = :p_user_id, executed_at = CURRENT_TIMESTAMP()
+    WHERE plan_id = :p_plan_id AND status = '未発注';
+
+    -- 4. 監査ログ記録
+    INSERT INTO AUDIT.AUDIT_LOG (operator, operation_type, target_table, target_record_id, after_value)
+    VALUES (:p_user_id, 'EXECUTE_ORDER', 'ORDER_PLANS', :p_plan_id,
+            OBJECT_CONSTRUCT('status', '発注済み'));
+
+    RETURN OBJECT_CONSTRUCT('success', TRUE, 'message', '発注を実行しました');
 END;
 $$;
 

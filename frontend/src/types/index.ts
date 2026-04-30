@@ -59,6 +59,9 @@ export interface OrderPlan {
   quantity: number;
   approved_by: string;
   approved_at: string;
+  status: string;
+  executed_by: string | null;
+  executed_at: string | null;
 }
 
 /** 配送（店長向け） */

@@ -23,6 +23,7 @@ import {
   fetchOrderPlans,
   approveProposal,
   rejectProposal,
+  executeOrderPlan,
 } from "@/services/api";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
@@ -44,6 +45,10 @@ export default function OrdersPage() {
     id: number;
     name: string;
   } | null>(null);
+  const [executeTarget, setExecuteTarget] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: "success" | "error" }>({
     open: false,
     message: "",
@@ -61,38 +66,62 @@ export default function OrdersPage() {
     queryFn: fetchOrderPlans,
   });
 
+  const refreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["proposals"] });
+    queryClient.invalidateQueries({ queryKey: ["order-plans"] });
+  };
+
   const approveMutation = useMutation({
     mutationFn: ({ id, qty }: { id: number; qty: number }) =>
       approveProposal(id, qty),
-    onSuccess: (result) => {
+    onSettled: () => {
       setApproveTarget(null);
-            if (result.success) {
-        setSnackbar({ open: true, message: result.message, severity: "success" });
-        queryClient.invalidateQueries({ queryKey: ["proposals"] });
-        queryClient.invalidateQueries({ queryKey: ["order-plans"] });
-      } else {
-        setSnackbar({ open: true, message: result.message, severity: "error" });
-      }
+      refreshAll();
+    },
+    onSuccess: (result) => {
+      setSnackbar({
+        open: true,
+        message: result.message,
+        severity: result.success ? "success" : "error",
+      });
     },
     onError: () => {
-      setApproveTarget(null);
-            setSnackbar({ open: true, message: "通信エラーが発生しました", severity: "error" });
+      setSnackbar({ open: true, message: "通信エラーが発生しました", severity: "error" });
     },
   });
 
   const rejectMutation = useMutation({
     mutationFn: (id: number) => rejectProposal(id),
-    onSuccess: (result) => {
+    onSettled: () => {
       setRejectTarget(null);
-      if (result.success) {
-        setSnackbar({ open: true, message: result.message, severity: "success" });
-        queryClient.invalidateQueries({ queryKey: ["proposals"] });
-      } else {
-        setSnackbar({ open: true, message: result.message, severity: "error" });
-      }
+      refreshAll();
+    },
+    onSuccess: (result) => {
+      setSnackbar({
+        open: true,
+        message: result.message,
+        severity: result.success ? "success" : "error",
+      });
     },
     onError: () => {
-      setRejectTarget(null);
+      setSnackbar({ open: true, message: "通信エラーが発生しました", severity: "error" });
+    },
+  });
+
+  const executeMutation = useMutation({
+    mutationFn: (id: number) => executeOrderPlan(id),
+    onSettled: () => {
+      setExecuteTarget(null);
+      refreshAll();
+    },
+    onSuccess: (result) => {
+      setSnackbar({
+        open: true,
+        message: result.message,
+        severity: result.success ? "success" : "error",
+      });
+    },
+    onError: () => {
       setSnackbar({ open: true, message: "通信エラーが発生しました", severity: "error" });
     },
   });
@@ -197,6 +226,8 @@ export default function OrdersPage() {
                 <TableCell>数量</TableCell>
                 <TableCell>承認者</TableCell>
                 <TableCell>承認日時</TableCell>
+                <TableCell>発注状況</TableCell>
+                <TableCell>操作</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -207,6 +238,35 @@ export default function OrdersPage() {
                   <TableCell>{p.approved_by}</TableCell>
                   <TableCell>
                     {new Date(p.approved_at).toLocaleString("ja-JP")}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={p.status}
+                      color={p.status === "発注済み" ? "success" : "default"}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {p.status === "未発注" && (
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() =>
+                          setExecuteTarget({
+                            id: p.plan_id,
+                            name: p.ingredient_name,
+                          })
+                        }
+                        data-testid={`execute-${p.plan_id}`}
+                      >
+                        発注実行
+                      </Button>
+                    )}
+                    {p.status === "発注済み" && p.executed_at && (
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(p.executed_at).toLocaleString("ja-JP")}
+                      </Typography>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -226,6 +286,16 @@ export default function OrdersPage() {
                   }}
         confirmLabel="承認する"
         loading={approveMutation.isPending}
+      />
+      {/* 発注実行ダイアログ */}
+      <ConfirmDialog
+        open={!!executeTarget}
+        title="発注実行"
+        message={`「${executeTarget?.name}」を発注しますか？`}
+        onConfirm={() => executeTarget && executeMutation.mutate(executeTarget.id)}
+        onCancel={() => setExecuteTarget(null)}
+        confirmLabel="発注する"
+        loading={executeMutation.isPending}
       />
       {/* 却下ダイアログ */}
       <ConfirmDialog

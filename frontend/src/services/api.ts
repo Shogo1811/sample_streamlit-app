@@ -19,7 +19,12 @@ const api = axios.create({
 });
 
 // リクエストインターセプター: Bearer トークンを付与
+const isDev = !import.meta.env.VITE_AZURE_AD_TENANT_ID;
+
 api.interceptors.request.use(async (config) => {
+  // DEVモード: Azure AD未設定時はトークンなしでリクエスト
+  if (isDev) return config;
+
   const accounts = msalInstance.getAllAccounts();
   if (accounts.length > 0) {
     try {
@@ -75,6 +80,10 @@ export const rejectProposal = (proposalId: number) =>
     .then((r) => r.data);
 export const fetchOrderPlans = () =>
   api.get<OrderPlan[]>("/orders/plans").then((r) => r.data);
+export const executeOrderPlan = (planId: number) =>
+  api
+    .post<SPResult>(`/orders/plans/${planId}/execute`)
+    .then((r) => r.data);
 
 // --- Deliveries ---
 export const fetchDeliveries = (status?: string) =>

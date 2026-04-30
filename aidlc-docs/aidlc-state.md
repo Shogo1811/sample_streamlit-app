@@ -3,7 +3,7 @@
 ## プロジェクト情報
 - **プロジェクト種別**: 移行（Brownfield — Streamlit → React+FastAPI+Container Services）
 - **開始日**: 2026-04-28
-- **現在のステージ**: CONSTRUCTION — ビルドとテスト完了、レビュー待ち
+- **現在のステージ**: OPERATIONS 完了 — 全フェーズ完了
 - **前バージョン**: aidlc-docs/archive/v1-streamlit/
 
 ## ワークスペース状態
@@ -46,7 +46,7 @@
 - [x] コード生成 - 完了（backend 15ファイル, frontend 15ファイル, infra 5ファイル）
 - [x] ビルドとテスト - 完了（21テスト全通過、リンター全クリア）
 ### OPERATIONS フェーズ
-- [ ] デプロイメント計画
+- [x] デプロイメント計画 - 完了（CI/CD, SPCS SQL, Azure ADセットアップ手順）
 
 ## 現在のステータス
 - 2026-04-28: AI-DLC v2 開始。Streamlit→React+FastAPI+Container Services移行プロジェクト。
