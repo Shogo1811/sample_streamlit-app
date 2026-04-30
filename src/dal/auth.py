@@ -1,23 +1,17 @@
-"""認証・ロール判定モジュール"""
+"""認証・ロール判定モジュール（Azure AD 対応版）"""
 
-import streamlit as st
 from snowflake.snowpark import Session
 from snowflake.snowpark.functions import col
 
-from src.utils.constants import CACHE_TTL_AUTH, ROLE_DRIVER, ROLE_MANAGER
+from src.utils.constants import ROLE_DRIVER, ROLE_MANAGER
 
 
-@st.cache_data(ttl=CACHE_TTL_AUTH)
-def get_current_user(_session: Session) -> str:
-    """現在のログインユーザー名を取得"""
-    result = _session.sql("SELECT CURRENT_USER()").collect()
-    return result[0][0]
+def get_user_roles(session: Session, user_id: str) -> list[dict]:
+    """ユーザーの全ロールを取得（複数ロール対応）
 
-
-@st.cache_data(ttl=CACHE_TTL_AUTH)
-def get_user_roles(_session: Session, user_id: str) -> list[dict]:
-    """ユーザーの全ロールを取得（複数ロール対応）"""
-    tbl = _session.table("APP.USER_ROLE_MAPPING")
+    user_id: Azure AD の oid（Object ID）
+    """
+    tbl = session.table("APP.USER_ROLE_MAPPING")
     rows = tbl.filter(col("USER_ID") == user_id).collect()
     return [
         {
@@ -39,9 +33,25 @@ def is_driver(roles: list[dict]) -> bool:
     return any(r["role_type"] == ROLE_DRIVER for r in roles)
 
 
-def check_consent(_session: Session, user_id: str, policy_version: str) -> bool:
+def get_store_id(roles: list[dict]) -> int | None:
+    """店長ロールの store_id を取得"""
+    for r in roles:
+        if r["role_type"] == ROLE_MANAGER:
+            return r["related_id"]
+    return None
+
+
+def get_driver_id(roles: list[dict]) -> int | None:
+    """ドライバーロールの driver_id を取得"""
+    for r in roles:
+        if r["role_type"] == ROLE_DRIVER:
+            return r["related_id"]
+    return None
+
+
+def check_consent(session: Session, user_id: str, policy_version: str) -> bool:
     """最新の同意レコードを確認（REVOKE考慮・ポリシーバージョン照合）"""
-    tbl = _session.table("AUDIT.CONSENT_RECORDS")
+    tbl = session.table("AUDIT.CONSENT_RECORDS")
     df = (
         tbl.filter((col("USER_ID") == user_id) & (col("POLICY_VERSION") == policy_version))
         .sort(col("CONSENTED_AT").desc())
@@ -53,9 +63,17 @@ def check_consent(_session: Session, user_id: str, policy_version: str) -> bool:
     return rows[0]["CONSENT_TYPE"] == "GRANT"
 
 
-def record_consent(_session: Session, user_id: str, policy_version: str) -> None:
+def record_consent(session: Session, user_id: str, policy_version: str) -> None:
     """プライバシーポリシー同意を記録"""
-    _session.sql(
-        "INSERT INTO AUDIT.CONSENT_RECORDS (user_id, consent_type, policy_version) SELECT ?, 'GRANT', ?",
+    session.sql(
+        "INSERT INTO AUDIT.CONSENT_RECORDS (user_id, consent_type, policy_version) VALUES (?, 'GRANT', ?)",
+        params=[user_id, policy_version],
+    ).collect()
+
+
+def revoke_consent(session: Session, user_id: str, policy_version: str) -> None:
+    """プライバシーポリシー同意を撤回"""
+    session.sql(
+        "INSERT INTO AUDIT.CONSENT_RECORDS (user_id, consent_type, policy_version) VALUES (?, 'REVOKE', ?)",
         params=[user_id, policy_version],
     ).collect()

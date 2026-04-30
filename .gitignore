@@ -51,5 +51,16 @@ config.toml
 # Ruff
 .ruff_cache/
 
+# Streamlit secrets（ローカル開発用 — 絶対にコミットしない）
+.streamlit/secrets.toml
+
 # Claude Code local
 .claude/settings.local.json
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Snowflake keys
+snowflake_key.p8
+snowflake_key.pub

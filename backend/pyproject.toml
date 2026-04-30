@@ -1,0 +1,15 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "S", "B", "A", "C4", "SIM"]
+ignore = ["S101", "B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+markers = ["unit", "integration"]
+addopts = "--strict-markers"
+
+[tool.coverage.run]
+source = ["backend/app", "src/dal", "src/utils"]

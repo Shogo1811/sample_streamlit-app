@@ -1,123 +1,93 @@
-# 実行計画
+# 実行計画（v2 — 移行プロジェクト）
 
-## 詳細分析サマリ
+## プロジェクト概要
+Streamlit → React (TS) + FastAPI + Snowflake Container Services 移行
 
-### 変更影響評価
-- **ユーザー向け変更**: あり — 新規の可視化ダッシュボード、発注提案承認、配送管理UI
-- **構造変更**: あり — 新規システム全体のアーキテクチャ設計が必要
-- **データモデル変更**: あり — 10テーブルの新規作成（店舗・食材・在庫・発注・配送・ドライバー・監査ログ・同意記録・ユーザーロールマッピング）
-- **API変更**: なし — SiSアプリ内で完結（外部API不要）
-- **NFR影響**: あり — パフォーマンス、セキュリティ、プライバシー、エラーハンドリング要件あり
+## フェーズ・ステージ決定
 
-### リスク評価
-- **リスクレベル**: 中（Medium）
-- **ロールバック複雑度**: 低（新規システムのため、デプロイしなければ影響なし）
-- **テスト複雑度**: 中（Row Access Policy、Stored Procedure、SiS環境テストが必要）
+### INCEPTION フェーズ
+| ステージ | 決定 | 根拠 |
+|---|---|---|
+| ワークスペース検出 | ✅ 実行済 | Brownfield 移行 |
+| リバースエンジニアリング | ✅ 実行済 | 既存コードの構造把握 |
+| 要件分析 | ✅ 実行済 | 移行固有要件の整理（9問回答済み） |
+| ユーザーストーリー | ⏭ SKIP | v1 のストーリー（12件）が有効。移行は技術変更であり、ユーザー要件は同一 |
+| アプリケーション設計 | ⏭ SKIP | 要件定義書のアーキテクチャ決定で十分。ユニット生成で具体化 |
+| ユニット生成 | ✅ EXECUTE | frontend/backend/docker の3ユニットに分割 |
+| ワークフロー計画 | ✅ EXECUTE（本ドキュメント） | — |
+
+### CONSTRUCTION フェーズ
+| ステージ | 決定 | 根拠 |
+|---|---|---|
+| 機能設計 | ✅ EXECUTE | React コンポーネント設計、API エンドポイント設計が必要 |
+| NFR 要件 | ⏭ SKIP | 要件定義書 NFR セクションで網羅済み |
+| NFR 設計 | ⏭ SKIP | 1コンテナ構成でシンプル、特別なパターン不要 |
+| インフラ設計 | ✅ EXECUTE | Container Services spec.yml、Dockerfile、Nginx 設定が必要 |
+| コード生成 | ✅ EXECUTE | Part 1（計画）+ Part 2（生成） |
+| ビルドとテスト | ✅ EXECUTE | Vitest + pytest + PBT |
+
+### OPERATIONS フェーズ
+| ステージ | 決定 | 根拠 |
+|---|---|---|
+| デプロイメント計画 | ✅ EXECUTE | CI/CD を Container Services 用に更新 |
 
 ---
 
-## ワークフロー可視化
+## ユニット定義
+
+### Unit 1: backend（FastAPI バックエンド）
+- **スコープ**: FastAPI アプリ、API ルーター、認証ミドルウェア、Pydantic スキーマ
+- **依存**: src/dal/（流用）、src/utils/（流用）
+- **成果物**: backend/ ディレクトリ一式
+- **優先度**: 最高（API が frontend の前提）
+
+### Unit 2: frontend（React フロントエンド）
+- **スコープ**: React + MUI、ページ、認証（MSAL.js）、API クライアント
+- **依存**: Unit 1（API エンドポイント定義）
+- **成果物**: frontend/ ディレクトリ一式
+- **優先度**: 高
+
+### Unit 3: infrastructure（コンテナ・デプロイ）
+- **スコープ**: Dockerfile、nginx.conf、spec.yml、CI/CD 更新
+- **依存**: Unit 1 + Unit 2
+- **成果物**: docker/、spec.yml、CI/CD 設定
+- **優先度**: 中（コード完成後）
+
+---
+
+## 実行順序フロー
 
 ```mermaid
 flowchart TD
-    Start(["ユーザーリクエスト"])
-
-    subgraph INCEPTION["INCEPTION フェーズ"]
-        WD["ワークスペース検出<br/><b>完了</b>"]
-        RA["要件分析<br/><b>完了</b>"]
-        US["ユーザーストーリー<br/><b>完了</b>"]
-        WP["ワークフロー計画<br/><b>実行中</b>"]
-    end
-
-    subgraph CONSTRUCTION["CONSTRUCTION フェーズ"]
-        CG["コード生成<br/>(計画 + 生成)<br/><b>実行予定</b>"]
-        BT["ビルドとテスト<br/><b>実行予定</b>"]
-    end
-
-    Start --> WD
-    WD --> RA
-    RA --> US
-    US --> WP
-    WP --> CG
-    CG --> BT
-    BT --> End(["完了"])
+    A[INCEPTION 完了] --> B[Unit 1: backend 機能設計]
+    B --> C[Unit 1: backend コード生成]
+    C --> D[Unit 2: frontend 機能設計]
+    D --> E[Unit 2: frontend コード生成]
+    E --> F[Unit 3: infrastructure インフラ設計]
+    F --> G[Unit 3: infrastructure コード生成]
+    G --> H[ビルドとテスト]
+    H --> I[レビュー]
+    I --> J[OPERATIONS デプロイメント計画]
 ```
 
 ---
 
-## 実行フェーズ
+## リスク評価
 
-### INCEPTION フェーズ
-- [x] ワークスペース検出（完了）
-- [x] リバースエンジニアリング — スキップ（新規開発のため不要）
-- [x] 要件分析（完了 — 9問 + 4追加質問）
-- [x] ユーザーストーリー（完了 — 2ペルソナ、5エピック、12ストーリー）
-- [x] ワークフロー計画（本ドキュメント）
-- [ ] アプリケーション設計 — **スキップ**
-  - **理由**: SiSアプリはStreamlit単一アプリ構成。サービスレイヤー分離やコンポーネント間依存はシンプル。Snowpark + Stored Procedureのパターンが要件定義で決定済みのため、別途のアプリケーション設計フェーズは不要
-- [ ] ユニット生成 — **スキップ**
-  - **理由**: エピック単位（Q7=A）のストーリーで十分。モジュール分割はコード生成計画（Part 1）で対応可能
-
-### CONSTRUCTION フェーズ
-- [ ] 機能設計 — **スキップ**
-  - **理由**: ユーザーストーリーの受入基準（Given-When-Then）で機能仕様が十分に定義済み
-- [ ] NFR要件 — **スキップ**
-  - **理由**: requirements.mdのNFR-01〜27で包括的に定義済み。技術スタックも確定（Snowpark/SiS）
-- [ ] NFR設計 — **スキップ**
-  - **理由**: Section 3.3〜3.9でSiS制約、キャッシュ戦略、RBAC設計、Row Access Policy、Warehouse設定が設計済み
-- [ ] インフラ設計 — **スキップ**
-  - **理由**: Section 3.5〜3.8でWarehouse設定、RBAC、デプロイメント方針、環境分離が定義済み。CONSTRUCTION前提条件としてsetup.sql/GitHub Actionsも計画済み
-- [ ] コード生成 — **実行**（必須）
-  - **理由**: アプリケーションコードの実装が必要
-  - **Part 1（計画）**: ファイル構成、モジュール分割、pyproject.toml、setup.sql、GitHub Actionsワークフロー定義
-  - **Part 2（生成）**: Streamlitアプリコード、Snowpark DAL、Stored Procedure、テストコード
-- [ ] ビルドとテスト — **実行**（必須）
-  - **理由**: ruff lint/format、pytest実行、SiS環境での動作確認が必要
+| リスク | 重大度 | 対策 |
+|---|---|---|
+| RLS → アプリ層制御への移行でデータ漏洩 | High | 全APIエンドポイントにロールフィルタテスト追加 |
+| Azure AD テナント未準備 | Medium | モック認証で開発、後からテナント情報差し込み |
+| 1コンテナのリソース制約 | Medium | Container Services のリソース設定で調整可能 |
+| DAL 流用時の Streamlit 依存 | Low | st.cache_data 参照を検出・除去 |
 
 ---
 
-## 実行サマリ
-
-| ステージ | 判定 | 理由 |
-|---------|------|------|
-| ワークスペース検出 | 完了 | — |
-| リバースエンジニアリング | スキップ | 新規開発 |
-| 要件分析 | 完了 | — |
-| ユーザーストーリー | 完了 | — |
-| ワークフロー計画 | 完了 | 本ドキュメント |
-| アプリケーション設計 | スキップ | SiS単一アプリ、設計済み |
-| ユニット生成 | スキップ | エピック単位で十分 |
-| 機能設計 | スキップ | 受入基準で定義済み |
-| NFR要件 | スキップ | NFR-01〜27定義済み |
-| NFR設計 | スキップ | Section 3.3〜3.9設計済み |
-| インフラ設計 | スキップ | Section 3.5〜3.8定義済み |
-| **コード生成** | **実行** | アプリ実装が必要 |
-| **ビルドとテスト** | **実行** | 品質検証が必要 |
-
-**合計実行ステージ**: 2（コード生成、ビルドとテスト）
-**スキップステージ**: 6（リバースエンジニアリング、アプリケーション設計、ユニット生成、機能設計、NFR要件/設計、インフラ設計）
-
----
-
-## コード生成 Part 1（計画）成果物チェックリスト
-
-Part 1完了時に以下が全て揃っていることを検証してからPart 2に進む:
-
-- [x] **pyproject.toml** — 作成済み（開発依存/SiS依存分離、ruff/pytest/coverage設定含む）
-- [x] **setup.sql** — 作成済み（Warehouse/DB/Schema/Role/RAP/Resource Monitor/Tasks/Time Travel）
-- [x] **GitHub Actionsワークフロー** — 作成済み（lint/test/deploy-stg/deploy-prodの4ジョブ）
-- [x] **ファイル構成・モジュール分割** — 作成済み（DAL層/UI層/バリデーション/定数の分離）
-- [x] **Stored Procedure一覧** — 作成済み（5SP: 承認/却下/配送完了/提案生成/データ保持管理）
-- [x] **画面構成定義** — 作成済み（店長3画面+ドライバー1画面+同意画面のワイヤーフレーム）
-
-## 成功基準
-- **主目標**: ラーメンチェーン店の食材在庫管理・発注提案・配送管理のSiSアプリを構築
-- **主な成果物**:
-  - Streamlit in Snowflakeアプリケーション（店長画面 + ドライバー画面）
-  - Snowflakeインフラ設定スクリプト（Warehouse、Role、Row Access Policy、Stored Procedure、Tasks）
-  - テストコード（pytest、ビジネスロジック80%以上、セキュリティ関連100%）
-  - CI/CDパイプライン（GitHub Actions）
-- **品質ゲート**:
-  - ruff lint/format 通過
-  - pytest 全テスト通過（カバレッジ閾値クリア）
-  - `/review` による全専門家90点以上
+## 完了基準
+- [ ] 全 API エンドポイントが動作すること
+- [ ] React UI で全 CRUD 操作が可能なこと
+- [ ] Azure AD SSO でログイン〜ロール判定が動作すること
+- [ ] ロールベースフィルタリングが正しく動作すること（旧 RLS 相当）
+- [ ] Docker コンテナがビルド・起動できること
+- [ ] テストカバレッジ 80% 以上
+- [ ] 既存の監査ログ機能が維持されること

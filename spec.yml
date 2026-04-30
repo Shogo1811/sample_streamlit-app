@@ -1,0 +1,67 @@
+spec:
+  containers:
+    - name: ramen-logistics
+      image: /ramen_logistics_db/app/image_repo/ramen-logistics:latest
+      resources:
+        requests:
+          cpu: 1
+          memory: 1Gi
+        limits:
+          cpu: 2
+          memory: 2Gi
+      env:
+        SNOWFLAKE_ACCOUNT:
+          type: secret
+          name: ramen_logistics_secrets
+          key: account
+        SNOWFLAKE_USER:
+          type: secret
+          name: ramen_logistics_secrets
+          key: user
+        SNOWFLAKE_PASSWORD:
+          type: secret
+          name: ramen_logistics_secrets
+          key: password
+        SNOWFLAKE_DATABASE:
+          type: value
+          value: RAMEN_LOGISTICS_PROD_DB
+        SNOWFLAKE_SCHEMA:
+          type: value
+          value: APP
+        SNOWFLAKE_WAREHOUSE:
+          type: value
+          value: RAMEN_APP_PROD_WH
+        AZURE_AD_TENANT_ID:
+          type: secret
+          name: azure_ad_secrets
+          key: tenant_id
+        AZURE_AD_CLIENT_ID:
+          type: secret
+          name: azure_ad_secrets
+          key: client_id
+        AZURE_AD_MANAGER_GROUP_ID:
+          type: secret
+          name: azure_ad_secrets
+          key: manager_group_id
+        AZURE_AD_DRIVER_GROUP_ID:
+          type: secret
+          name: azure_ad_secrets
+          key: driver_group_id
+      readinessProbe:
+        port: 8080
+        path: /health
+        initialDelaySeconds: 10
+        periodSeconds: 15
+        timeoutSeconds: 5
+        failureThreshold: 3
+      livenessProbe:
+        port: 8080
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 30
+        timeoutSeconds: 5
+        failureThreshold: 3
+  endpoints:
+    - name: ramen-logistics
+      port: 8080
+      public: true
