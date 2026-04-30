@@ -1,5 +1,6 @@
 """Snowparkセッション管理（Container Services / ローカル両対応）"""
 
+import os
 import threading
 
 from snowflake.snowpark import Session
@@ -8,8 +9,30 @@ _lock = threading.Lock()
 _session: Session | None = None
 
 
-def _get_connection_params() -> dict:
-    """設定から接続パラメータを取得"""
+def _is_spcs() -> bool:
+    """Snowflake Container Services 環境かどうかを判定"""
+    return os.path.exists("/snowflake/session/token")
+
+
+def _create_spcs_session() -> Session:
+    """SPCS環境: OAuth トークンファイルで接続"""
+    from backend.app.config import settings
+
+    return Session.builder.configs(
+        {
+            "host": os.environ.get("SNOWFLAKE_HOST", ""),
+            "account": os.environ.get("SNOWFLAKE_ACCOUNT", ""),
+            "authenticator": "oauth",
+            "token": open("/snowflake/session/token").read(),  # noqa: SIM115
+            "database": settings.snowflake_database,
+            "schema": settings.snowflake_schema,
+            "warehouse": settings.snowflake_warehouse,
+        }
+    ).create()
+
+
+def _create_local_session() -> Session:
+    """ローカル環境: パスワード or キーペア認証で接続"""
     from backend.app.config import settings
 
     account = settings.snowflake_account
@@ -37,12 +60,14 @@ def _get_connection_params() -> dict:
         params["private_key_path"] = private_key_path
     else:
         params["password"] = password
-    return params
+    return Session.builder.configs(params).create()
 
 
 def create_session() -> Session:
-    """Snowparkセッションを作成"""
-    return Session.builder.configs(_get_connection_params()).create()
+    """Snowparkセッションを作成（環境自動判定）"""
+    if _is_spcs():
+        return _create_spcs_session()
+    return _create_local_session()
 
 
 def get_session() -> Session:

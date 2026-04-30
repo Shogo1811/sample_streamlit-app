@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { useMsal } from "@azure/msal-react";
 import {
   AppBar,
   Toolbar,
@@ -64,7 +63,6 @@ export default function Layout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { instance } = useMsal();
   const { data: user } = useCurrentUser();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -74,7 +72,8 @@ export default function Layout() {
   );
 
   const handleLogout = () => {
-    instance.logoutRedirect();
+    // Azure AD設定時はMSALでログアウト、未設定時はトップに戻る
+    window.location.href = "/";
   };
 
   const drawerContent = (

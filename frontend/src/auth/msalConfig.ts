@@ -5,8 +5,8 @@ const CLIENT_ID = import.meta.env.VITE_AZURE_AD_CLIENT_ID || "";
 
 export const msalConfig: Configuration = {
   auth: {
-    clientId: CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${TENANT_ID}`,
+    clientId: CLIENT_ID || "00000000-0000-0000-0000-000000000000",
+    authority: `https://login.microsoftonline.com/${TENANT_ID || "common"}`,
     redirectUri: window.location.origin,
     postLogoutRedirectUri: window.location.origin,
   },
@@ -22,8 +22,8 @@ export const msalConfig: Configuration = {
 };
 
 export const loginRequest = {
-  scopes: [`api://${CLIENT_ID}/access_as_user`],
+  scopes: CLIENT_ID ? [`api://${CLIENT_ID}/access_as_user`] : [],
 };
 
-// 単一インスタンス（AuthProvider と api.ts で共有）
+// Azure AD 未設定時はダミーインスタンス
 export const msalInstance = new PublicClientApplication(msalConfig);
